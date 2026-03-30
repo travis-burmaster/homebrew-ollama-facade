@@ -3,8 +3,8 @@ class OllamaFacade < Formula
 
   desc "Run Claude Max as a local Ollama server on your network"
   homepage "https://github.com/travis-burmaster/homebrew-ollama-facade"
-  url "https://github.com/travis-burmaster/homebrew-ollama-facade/archive/refs/tags/v2.0.0.tar.gz"
-  sha256 "3e0d2193d3180af08386237025733b8bd2eac378a76c660e1e493003e74560e9"
+  url "https://github.com/travis-burmaster/homebrew-ollama-facade/archive/refs/tags/v2.0.1.tar.gz"
+  sha256 "PLACEHOLDER"
   license "MIT"
 
   depends_on "python@3.12"
@@ -62,6 +62,11 @@ class OllamaFacade < Formula
   resource "typing-extensions" do
     url "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl"
     sha256 "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
+  end
+
+  resource "typing-inspection" do
+    url "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl"
+    sha256 "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"
   end
 
   resource "pycparser" do
