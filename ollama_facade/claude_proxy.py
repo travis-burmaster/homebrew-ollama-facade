@@ -32,6 +32,11 @@ OAUTH_BETA = (
     "context-management-2025-06-27,"
     "prompt-caching-scope-2026-01-05"
 )
+# Older beta string kept as fallback reference
+OAUTH_BETA_COMPAT = (
+    "claude-code-20250219,oauth-2025-04-20,"
+    "prompt-caching-2024-07-31"
+)
 TOKEN_REFRESH_URL = "https://api.anthropic.com/v1/oauth/token"
 OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 BILLING_HEADER = "x-anthropic-billing-header: cc_version=2.1.63.e4d; cc_entrypoint=cli; cch=ce2dd;"
@@ -285,7 +290,7 @@ def _resolve_model(name: str) -> str:
 
 def _build_headers(token: str, stream: bool = False) -> dict:
     return {
-        "x-api-key": token,
+        "Authorization": f"Bearer {token}",
         "anthropic-version": ANTHROPIC_VERSION,
         "anthropic-beta": OAUTH_BETA,
         "Anthropic-Dangerous-Direct-Browser-Access": "true",
