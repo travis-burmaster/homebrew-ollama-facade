@@ -123,6 +123,15 @@ curl -s http://localhost:11434/api/chat \
   }'
 ```
 
+**Common errors:**
+
+| Error | Cause | Fix |
+|---|---|---|
+| `"No proxy URLs configured"` | Config file not found or `primary_url` missing | Run `ollama-facade config --init`, then set `primary_url` in `~/.ollama-facade/config.yaml` |
+| `"Connection error"` | Backend not reachable at `primary_url` | Start `claude-oauth-proxy` or check the URL in your config |
+| `"Invalid API key"` / 401 | OAuth token missing or expired | Set `CLAUDE_OAUTH_TOKEN` env var or check token in `claude-oauth-proxy` |
+| `"All proxies exhausted"` | All backends failed | Check backend logs; token may be rate-limited or expired |
+
 ---
 
 ## How It Works
