@@ -9,14 +9,36 @@ class OllamaFacade < Formula
 
   depends_on "python@3.12"
 
-  resource "fastapi" do
-    url "https://files.pythonhosted.org/packages/source/f/fastapi/fastapi-0.115.12.tar.gz"
-    sha256 "1e2c2a2646905f9e83d32f04a3f86aff4a286669c6c950ca95b5fd68c2602681"
+  # ── Core deps (pure Python wheels) ─────────────────────────────────────────
+
+  resource "certifi" do
+    url "https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl"
+    sha256 "ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"
   end
 
-  resource "uvicorn" do
-    url "https://files.pythonhosted.org/packages/source/u/uvicorn/uvicorn-0.34.0.tar.gz"
-    sha256 "404051050cd7e905de2c9a7e61790943440b3416f49cb409f965d9dcd0fa73e9"
+  resource "idna" do
+    url "https://files.pythonhosted.org/packages/76/c6/c88e154df9c4e1a2a66ccf0005a88dfb2650c1dffb6f5ce603dfbd452ce3/idna-3.10-py3-none-any.whl"
+    sha256 "946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3"
+  end
+
+  resource "sniffio" do
+    url "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl"
+    sha256 "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
+  end
+
+  resource "anyio" do
+    url "https://files.pythonhosted.org/packages/a1/ee/48ca1a7c89ffec8b6a0c5d02b89c305671d5ffd8d3c94acf8b8c408575bb/anyio-4.9.0-py3-none-any.whl"
+    sha256 "9f76d541cad6e36af7beb62e978876f3b41e3e04f2c1fbf0884604c0a9c4d93c"
+  end
+
+  resource "h11" do
+    url "https://files.pythonhosted.org/packages/95/04/ff642e65ad6b90db43e668d70ffb6736436c7ce41fcc549f4e9472234127/h11-0.14.0-py3-none-any.whl"
+    sha256 "e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761"
+  end
+
+  resource "httpcore" do
+    url "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl"
+    sha256 "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
   end
 
   resource "httpx" do
@@ -24,14 +46,65 @@ class OllamaFacade < Formula
     sha256 "75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"
   end
 
+  resource "click" do
+    url "https://files.pythonhosted.org/packages/7e/d4/7ebdbd03970677812aac39c869717059dbb71a4cfc033ca6e5221787892c/click-8.1.8-py3-none-any.whl"
+    sha256 "63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"
+  end
+
+  resource "annotated-types" do
+    url "https://files.pythonhosted.org/packages/78/b6/6307fbef88d9b5ee7421e68d78a9f162e0da4900bc5f5793f6d3d0e34fb8/annotated_types-0.7.0-py3-none-any.whl"
+    sha256 "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"
+  end
+
+  resource "starlette" do
+    url "https://files.pythonhosted.org/packages/a0/4b/528ccf7a982216885a1ff4908e886b8fb5f19862d1962f56a3fce2435a70/starlette-0.46.1-py3-none-any.whl"
+    sha256 "77c74ed9d2720138b25875133f3a2dae6d854af2ec37dceb56aef370c1d8a227"
+  end
+
   resource "pyyaml" do
     url "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz"
     sha256 "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"
   end
 
-  resource "curl-cffi" do
-    url "https://files.pythonhosted.org/packages/source/c/curl_cffi/curl_cffi-0.7.4.tar.gz"
-    sha256 "37a2c8ec77b9914b0c14c74f604991751948d9d5def58fcddcbe73e3b62111c1"
+  # ── Platform-specific native wheels ────────────────────────────────────────
+
+  on_arm do
+    resource "pydantic-core" do
+      url "https://files.pythonhosted.org/packages/19/78/f381d643b12378fee782a72126ec5d793081ef03791c28a0fd542a5bee64/pydantic_core-2.33.1-cp312-cp312-macosx_11_0_arm64.whl"
+      sha256 "99b56acd433386c8f20be5c4000786d1e7ca0523c8eefc995d14d79c7a081498"
+    end
+
+    resource "curl-cffi" do
+      url "https://files.pythonhosted.org/packages/29/e9/141ff25c5e35f4afc998cf60134df94e0a9157427da69d6ee1d2a045c554/curl_cffi-0.7.4-cp38-abi3-macosx_11_0_arm64.whl"
+      sha256 "fb76b654fcf9f3e0400cf13be949e4fc525aeb0f9e2e90e61ae48d5bd8557d25"
+    end
+  end
+
+  on_intel do
+    resource "pydantic-core" do
+      url "https://files.pythonhosted.org/packages/c8/ce/3cb22b07c29938f97ff5f5bb27521f95e2ebec399b882392deb68d6c440e/pydantic_core-2.33.1-cp312-cp312-macosx_10_12_x86_64.whl"
+      sha256 "1293d7febb995e9d3ec3ea09caf1a26214eec45b0f29f6074abb004723fc1de8"
+    end
+
+    resource "curl-cffi" do
+      url "https://files.pythonhosted.org/packages/d1/c7/f2133c98a9956baa720dc775ba43b2cf7bf22b0feb0f921aab9bbeb2b58c/curl_cffi-0.7.4-cp38-abi3-macosx_10_9_x86_64.whl"
+      sha256 "417f5264fa746d2680ebb20fbfbcfe5d77fa11a735548d9db6734e839a238e22"
+    end
+  end
+
+  resource "pydantic" do
+    url "https://files.pythonhosted.org/packages/bf/c2/0f3baea344d0b15e35cb3e04ad5b953fa05106b76efbf4c782a3f47f22f5/pydantic-2.11.2-py3-none-any.whl"
+    sha256 "7f17d25846bcdf89b670a86cdfe7b29a9f1c9ca23dee154221c9aa81845cfca7"
+  end
+
+  resource "uvicorn" do
+    url "https://files.pythonhosted.org/packages/source/u/uvicorn/uvicorn-0.34.0.tar.gz"
+    sha256 "404051050cd7e905de2c9a7e61790943440b3416f49cb409f965d9dcd0fa73e9"
+  end
+
+  resource "fastapi" do
+    url "https://files.pythonhosted.org/packages/source/f/fastapi/fastapi-0.115.12.tar.gz"
+    sha256 "1e2c2a2646905f9e83d32f04a3f86aff4a286669c6c950ca95b5fd68c2602681"
   end
 
   def install
@@ -59,10 +132,7 @@ class OllamaFacade < Formula
       Start in the foreground:
         ollama-facade start
 
-      Start as a background service:
-        ollama-facade start --daemon
-
-      Or use Homebrew services (launchd on macOS):
+      Start as a background service (launchd):
         brew services start ollama-facade
 
       Connect any Ollama-compatible client to:
