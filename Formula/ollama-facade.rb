@@ -2,8 +2,8 @@ class OllamaFacade < Formula
   include Language::Python::Virtualenv
 
   desc "Run Claude Max as a local Ollama server on your network"
-  homepage "https://github.com/travis-burmaster/ollama-facade"
-  url "https://github.com/travis-burmaster/ollama-facade/archive/refs/tags/v1.0.0.tar.gz"
+  homepage "https://github.com/travis-burmaster/homebrew-ollama-facade"
+  url "https://github.com/travis-burmaster/homebrew-ollama-facade/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "4d5ebeca52f82c88a9ef202827014c7628b76d392d38579b81d120a64de45634"
   license "MIT"
 
