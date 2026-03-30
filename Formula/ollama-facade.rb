@@ -69,20 +69,6 @@ class OllamaFacade < Formula
     sha256 "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf"
   end
 
-  on_arm do
-    resource "jiter" do
-      url "https://files.pythonhosted.org/packages/c3/27/e57f9a783246ed95481e6749cc5002a8a767a73177a83c63ea71f0528b90/jiter-0.13.0-cp312-cp312-macosx_11_0_arm64.whl"
-      sha256 "f917a04240ef31898182f76a332f508f2cc4b57d2b4d7ad2dbfebbfe167eb505"
-    end
-  end
-
-  on_intel do
-    resource "jiter" do
-      url "https://files.pythonhosted.org/packages/2e/30/7687e4f87086829955013ca12a9233523349767f69653ebc27036313def9/jiter-0.13.0-cp312-cp312-macosx_10_12_x86_64.whl"
-      sha256 "0a2bd69fc1d902e89925fc34d1da51b2128019423d7b339a45d9e99c894e0663"
-    end
-  end
-
   resource "openai" do
     url "https://files.pythonhosted.org/packages/2a/9e/5bfa2270f902d5b92ab7d41ce0475b8630572e71e349b2a4996d14bdda93/openai-2.30.0-py3-none-any.whl"
     sha256 "9a5ae616888eb2748ec5e0c5b955a51592e0b201a11f4262db920f2a78c5231d"
@@ -91,20 +77,6 @@ class OllamaFacade < Formula
   resource "pyyaml" do
     url "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz"
     sha256 "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"
-  end
-
-  on_arm do
-    resource "pydantic-core" do
-      url "https://files.pythonhosted.org/packages/19/78/f381d643b12378fee782a72126ec5d793081ef03791c28a0fd542a5bee64/pydantic_core-2.33.1-cp312-cp312-macosx_11_0_arm64.whl"
-      sha256 "99b56acd433386c8f20be5c4000786d1e7ca0523c8eefc995d14d79c7a081498"
-    end
-  end
-
-  on_intel do
-    resource "pydantic-core" do
-      url "https://files.pythonhosted.org/packages/c8/ce/3cb22b07c29938f97ff5f5bb27521f95e2ebec399b882392deb68d6c440e/pydantic_core-2.33.1-cp312-cp312-macosx_10_12_x86_64.whl"
-      sha256 "1293d7febb995e9d3ec3ea09caf1a26214eec45b0f29f6074abb004723fc1de8"
-    end
   end
 
   resource "pydantic" do
@@ -125,10 +97,15 @@ class OllamaFacade < Formula
   def install
     virtualenv_install_with_resources
 
-    # Install curl-cffi separately using pip (pre-built wheel, avoids build issues)
-    venv_pip = libexec/"bin/pip"
-    system venv_pip, "install", "--no-deps", "--quiet",
-           "curl-cffi==0.7.4"
+    # Install native extension wheels via pip --python= (virtualenv_install_with_resources
+    # uses --without-pip so libexec/bin/pip does not exist; use the formula Python's pip
+    # with --python= to target the venv, same as virtualenv_install_with_resources does
+    # internally. These packages have native extensions so must be installed as wheels.)
+    pip = Formula["python@3.12"].opt_libexec/"bin/pip"
+    venv_python = libexec/"bin/python"
+    system pip, "--python=#{venv_python}", "install", "--no-deps", "jiter==0.13.0"
+    system pip, "--python=#{venv_python}", "install", "--no-deps", "pydantic-core==2.33.1"
+    system pip, "--python=#{venv_python}", "install", "--no-deps", "curl-cffi==0.7.4"
   end
 
   service do
