@@ -97,8 +97,14 @@ class Account:
                                "Run 'claude setup-token' to authenticate.")
 
     def _load_from_credentials(self, path: Path) -> str:
-        """Load from ~/.claude/.credentials.json (written by claude setup-token)."""
+        """Load token from credentials file (auto-detects format)."""
         creds = json.loads(path.read_text())
+
+        # Format 1: cli-proxy-api format {access_token, refresh_token, expired, ...}
+        if "access_token" in creds:
+            return self._load_cliproxyapi_format(creds, path)
+
+        # Format 2: claude setup-token format {claudeAiOauth: {accessToken, refreshToken, expiresAt}}
         oauth = creds.get("claudeAiOauth", {})
         expires_at = oauth.get("expiresAt", 0)
         if expires_at < (time.time() + 300) * 1000:
@@ -108,6 +114,48 @@ class Account:
         token = oauth.get("accessToken")
         if not token:
             raise RuntimeError(f"Account '{self.name}': no accessToken in {path}")
+        return token
+
+    def force_refresh(self) -> None:
+        """Force a token refresh (called after 401). Works with any credential format."""
+        with self._lock:
+            path = self._token_path
+            if not path:
+                path = DEFAULT_CREDENTIALS_PATH
+            if not path or not path.exists():
+                return
+            try:
+                creds = json.loads(path.read_text())
+                if "access_token" in creds:
+                    self._try_refresh_cliproxyapi(creds, path)
+                else:
+                    oauth = creds.get("claudeAiOauth", {})
+                    self._try_refresh(oauth, creds, path)
+            except Exception:
+                pass
+
+    def _load_cliproxyapi_format(self, creds: dict, path: Path) -> str:
+        """Load from cli-proxy-api format {access_token, refresh_token, expired}."""
+        from datetime import datetime, timezone, timedelta
+        token = creds.get("access_token", "")
+        if not token:
+            raise RuntimeError(f"Account '{self.name}': no access_token in {path}")
+
+        # Check expiry — field is ISO 8601 string like "2026-03-30T18:27:42-04:00"
+        expired_str = creds.get("expired", "")
+        if expired_str:
+            try:
+                expires_dt = datetime.fromisoformat(expired_str)
+                now = datetime.now(timezone.utc)
+                if expires_dt < now + timedelta(minutes=5):
+                    refresh_tok = creds.get("refresh_token", "")
+                    if refresh_tok:
+                        self._try_refresh_cliproxyapi(creds, path)
+                        creds = json.loads(path.read_text())
+                        token = creds.get("access_token", "")
+            except (ValueError, TypeError):
+                pass  # Can't parse expiry, use token as-is
+
         return token
 
     def _try_refresh(self, oauth: dict, creds: dict, path: Path) -> None:
@@ -141,6 +189,46 @@ class Account:
                     path.write_text(json.dumps(creds, indent=2))
         except Exception as e:
             import sys
+            print(f"[claude-proxy] {self.name}: token refresh failed: {e}", file=sys.stderr)
+
+    def _try_refresh_cliproxyapi(self, creds: dict, path: Path) -> None:
+        """Refresh token for cli-proxy-api format credentials."""
+        from datetime import datetime, timezone, timedelta
+        import sys
+        refresh_tok = creds.get("refresh_token", "")
+        if not refresh_tok:
+            print(f"[claude-proxy] {self.name}: no refresh_token in {path}", file=sys.stderr)
+            return
+        try:
+            payload = json.dumps({
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_tok,
+                "client_id": OAUTH_CLIENT_ID,
+            }).encode()
+            print(f"[claude-proxy] {self.name}: refreshing token...", file=sys.stderr)
+            req = urllib.request.Request(
+                TOKEN_REFRESH_URL, data=payload,
+                headers={"Content-Type": "application/json",
+                         "anthropic-version": ANTHROPIC_VERSION},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read())
+                new_token = data.get("access_token")
+                new_refresh = data.get("refresh_token")
+                expires_in = data.get("expires_in", 3600)
+                if new_token:
+                    creds["access_token"] = new_token
+                    if new_refresh:
+                        creds["refresh_token"] = new_refresh
+                    expires_dt = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+                    creds["expired"] = expires_dt.isoformat()
+                    creds["last_refresh"] = datetime.now(timezone.utc).isoformat()
+                    path.write_text(json.dumps(creds, indent=2))
+        except urllib.error.HTTPError as e:
+            body = e.read().decode()[:300]
+            print(f"[claude-proxy] {self.name}: token refresh failed: {e.code} {body}", file=sys.stderr)
+        except Exception as e:
             print(f"[claude-proxy] {self.name}: token refresh failed: {e}", file=sys.stderr)
 
     def record_rate_limit(self, cooldown_seconds: int = 60) -> None:
@@ -389,6 +477,21 @@ def call_anthropic(pool: AccountPool, body: dict, stream: bool, max_retries: int
                 url, headers=headers, data=payload,
                 impersonate="chrome", timeout=300, stream=stream,
             )
+            if resp.status_code == 401:
+                # Token likely expired/revoked — force refresh and retry once
+                import sys
+                print(f"[claude-proxy] {account.name}: 401 — forcing token refresh", file=sys.stderr)
+                account.force_refresh()
+                token = account.get_token()
+                headers = _build_headers(token, stream=stream)
+                resp = cffi_requests.post(
+                    url, headers=headers, data=payload,
+                    impersonate="chrome", timeout=300, stream=stream,
+                )
+                if resp.status_code >= 400:
+                    raise RuntimeError(f"Anthropic API error {resp.status_code}: {resp.text[:200]}")
+                account.record_success()
+                return resp
             if resp.status_code == 429:
                 account.record_rate_limit(cooldown_seconds=60 * (attempt + 1))
                 continue
