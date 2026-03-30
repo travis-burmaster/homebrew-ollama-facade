@@ -89,13 +89,38 @@ ollama_models:
 }
 ```
 
-### curl test
+### curl tests
 
+Health check (no backend required):
 ```bash
+curl http://localhost:11434/
+# → "Ollama is running"
+
+curl http://localhost:11434/api/version
+# → {"version":"0.5.0"}
+
 curl http://localhost:11434/api/tags
-curl -X POST http://localhost:11434/api/chat \
+# → {"models":[{"name":"claude-sonnet-4-6",...},{"name":"claude-opus-4-6",...}]}
+```
+
+Chat (requires `claude-oauth-proxy` running on `primary_url`):
+```bash
+# Non-streaming
+curl -s http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"hello"}]}'
+  -d '{
+    "model": "claude-sonnet-4-6",
+    "messages": [{"role": "user", "content": "say hi"}],
+    "stream": false
+  }'
+
+# Streaming (default)
+curl -s http://localhost:11434/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4-6",
+    "messages": [{"role": "user", "content": "say hi"}]
+  }'
 ```
 
 ---
