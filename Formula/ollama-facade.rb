@@ -4,7 +4,7 @@ class OllamaFacade < Formula
   desc "Run Claude Max as a local Ollama server on your network"
   homepage "https://github.com/travis-burmaster/homebrew-ollama-facade"
   url "https://github.com/travis-burmaster/homebrew-ollama-facade/archive/refs/tags/v2.0.1.tar.gz"
-  sha256 "PLACEHOLDER"
+  sha256 "7ecf279873ba075363cc6b6846d1653531bc4520f29eddd3c0d0a666a09516c3"
   license "MIT"
 
   depends_on "python@3.12"
