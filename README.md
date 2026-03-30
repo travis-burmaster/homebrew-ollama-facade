@@ -49,9 +49,14 @@ brew services stop ollama-facade
 Config lives at `~/.ollama-facade/config.yaml`:
 
 ```yaml
-# Backend — point at claude-oauth-proxy or any OpenAI-compatible endpoint
-primary_url: "http://127.0.0.1:8319/v1"
+# Backend — point at cliproxyapi or any OpenAI-compatible endpoint
+primary_url: "http://127.0.0.1:8317/v1"
 secondary_url: null   # optional failover
+
+# API key required by the backend.
+# For cliproxyapi: copy any key from the api-keys list in /opt/homebrew/etc/cliproxyapi.conf
+# Can also be set via CLAUDE_OAUTH_TOKEN env var instead.
+api_key: "sk-ant-..."
 
 # Port for the Ollama-compatible API
 ollama_port: 11434
@@ -129,7 +134,7 @@ curl -s http://localhost:11434/api/chat \
 |---|---|---|
 | `"No proxy URLs configured"` | Config file not found or `primary_url` missing | Run `ollama-facade config --init`, then set `primary_url` in `~/.ollama-facade/config.yaml` |
 | `"Connection error."` | Backend not reachable at `primary_url` | Start `claude-oauth-proxy` or check the URL in your config |
-| `"Invalid API key"` / 401 | OAuth token missing or expired | Set `CLAUDE_OAUTH_TOKEN` env var or check token in `claude-oauth-proxy` |
+| `"Invalid API key"` / 401 | `api_key` in config wrong or missing | Copy a key from `cliproxyapi.conf api-keys` into `~/.ollama-facade/config.yaml` |
 | `"All proxies exhausted"` | All backends failed | Check backend logs; token may be rate-limited or expired |
 
 ---
@@ -156,19 +161,31 @@ Your clients (Cursor, OpenClaw, Open WebUI)
 
 ---
 
-## Backend: claude-oauth-proxy
+## Backend: cliproxyapi
 
-ollama-facade is the Ollama-protocol frontend. For the authentication backend, see:
+ollama-facade is the Ollama-protocol frontend. It needs an OpenAI-compatible backend to forward requests to Claude. The recommended backend is **cliproxyapi**:
 
-**[travis-burmaster/claude-oauth-proxy](https://github.com/travis-burmaster/claude-oauth-proxy)**
+```bash
+brew install cliproxyapi
+cliproxyapi --claude-login   # authenticate with your Claude account
+brew services start cliproxyapi
+```
 
-That repo handles:
-- OAuth token reading + auto-refresh
-- Chrome TLS impersonation via `curl-cffi`
-- Multi-account pooling with rate limit failover
-- Subnet restriction
+cliproxyapi runs on port 8317 by default. Once it's running, copy one of its API keys into your ollama-facade config:
 
-Install both for the full stack, or point `primary_url` at any existing OpenAI-compatible endpoint.
+```bash
+# Find your api-keys in cliproxyapi's config
+grep -A2 "api-keys:" /opt/homebrew/etc/cliproxyapi.conf
+
+# Add it to ollama-facade config
+nano ~/.ollama-facade/config.yaml
+# set: api_key: "sk-ant-..."
+
+# Restart to pick up the change
+brew services restart ollama-facade
+```
+
+Or point `primary_url` at any other OpenAI-compatible endpoint and set its key in `api_key`.
 
 ---
 
