@@ -97,14 +97,16 @@ class OllamaFacade < Formula
   def install
     virtualenv_install_with_resources
 
-    # Install native extension wheels via pip --python= (virtualenv_install_with_resources
-    # uses --without-pip so libexec/bin/pip does not exist; use the formula Python's pip
-    # with --python= to target the venv, same as virtualenv_install_with_resources does
-    # internally. These packages have native extensions so must be installed as wheels.)
+    # Install native extension packages via pip (these have C extensions that must
+    # be installed as pre-built wheels matching the target platform).
+    # virtualenv_install_with_resources uses --without-pip, so use the formula
+    # Python's pip with --python= to target the venv.
     pip = Formula["python@3.12"].opt_libexec/"bin/pip"
     venv_python = libexec/"bin/python"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "pydantic-core==2.33.1"
-    system pip, "--python=#{venv_python}", "install", "--no-deps", "cffi==2.0.0"
+    # cffi provides _cffi_backend (native C extension) required by curl-cffi at runtime.
+    # pycparser (already installed as a resource above) is cffi's only dependency.
+    system pip, "--python=#{venv_python}", "install", "cffi==2.0.0"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "curl-cffi==0.7.4"
   end
 
