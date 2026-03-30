@@ -59,6 +59,21 @@ class OllamaFacade < Formula
     sha256 "77c74ed9d2720138b25875133f3a2dae6d854af2ec37dceb56aef370c1d8a227"
   end
 
+  resource "typing-extensions" do
+    url "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl"
+    sha256 "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
+  end
+
+  resource "typing-inspection" do
+    url "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl"
+    sha256 "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"
+  end
+
+  resource "pycparser" do
+    url "https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl"
+    sha256 "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"
+  end
+
   resource "distro" do
     url "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl"
     sha256 "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"
@@ -105,6 +120,7 @@ class OllamaFacade < Formula
     venv_python = libexec/"bin/python"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "jiter==0.13.0"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "pydantic-core==2.33.1"
+    system pip, "--python=#{venv_python}", "install", "--no-deps", "cffi==2.0.0"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "curl-cffi==0.7.4"
   end
 
