@@ -3,8 +3,8 @@ class OllamaFacade < Formula
 
   desc "Run Claude Max as a local Ollama server on your network"
   homepage "https://github.com/travis-burmaster/homebrew-ollama-facade"
-  url "https://github.com/travis-burmaster/homebrew-ollama-facade/archive/refs/tags/v1.0.3.tar.gz"
-  sha256 "2cca3b8ac1a5f8ae81870f95c2d416df21bb559e564e9541843bc03731c34595"
+  url "https://github.com/travis-burmaster/homebrew-ollama-facade/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "PLACEHOLDER"
   license "MIT"
 
   depends_on "python@3.12"
@@ -64,29 +64,9 @@ class OllamaFacade < Formula
     sha256 "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
   end
 
-  resource "typing-inspection" do
-    url "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl"
-    sha256 "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"
-  end
-
   resource "pycparser" do
     url "https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl"
     sha256 "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"
-  end
-
-  resource "distro" do
-    url "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl"
-    sha256 "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"
-  end
-
-  resource "tqdm" do
-    url "https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl"
-    sha256 "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf"
-  end
-
-  resource "openai" do
-    url "https://files.pythonhosted.org/packages/2a/9e/5bfa2270f902d5b92ab7d41ce0475b8630572e71e349b2a4996d14bdda93/openai-2.30.0-py3-none-any.whl"
-    sha256 "9a5ae616888eb2748ec5e0c5b955a51592e0b201a11f4262db920f2a78c5231d"
   end
 
   resource "pyyaml" do
@@ -118,7 +98,6 @@ class OllamaFacade < Formula
     # internally. These packages have native extensions so must be installed as wheels.)
     pip = Formula["python@3.12"].opt_libexec/"bin/pip"
     venv_python = libexec/"bin/python"
-    system pip, "--python=#{venv_python}", "install", "--no-deps", "jiter==0.13.0"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "pydantic-core==2.33.1"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "cffi==2.0.0"
     system pip, "--python=#{venv_python}", "install", "--no-deps", "curl-cffi==0.7.4"
@@ -139,8 +118,11 @@ class OllamaFacade < Formula
       Before starting, create your config:
         ollama-facade config --init
 
-      Then edit ~/.ollama-facade/config.yaml to point at your claude-oauth-proxy:
-        primary_url: "http://127.0.0.1:8319/v1"
+      Edit ~/.ollama-facade/config.yaml and verify the credentials path:
+        accounts:
+          - credentials: "~/.claude/.credentials.json"
+
+      (This file is created automatically when you log in with the Claude CLI.)
 
       Start in the foreground:
         ollama-facade start

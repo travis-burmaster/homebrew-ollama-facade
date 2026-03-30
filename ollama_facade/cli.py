@@ -27,19 +27,25 @@ LOG_FILE    = CONFIG_DIR / "ollama-facade.log"
 
 DEFAULT_CONFIG = """\
 # ollama-facade config
-# Proxy backend — point this at cliproxyapi or any OpenAI-compatible endpoint
-primary_url: "http://127.0.0.1:8317/v1"
-secondary_url: null
 
-# API key required by the backend (e.g. the key from cliproxyapi.conf api-keys list)
-# Can also be set via CLAUDE_OAUTH_TOKEN env var
-api_key: ""
+# Claude accounts — credentials files written by the Claude CLI (claude.ai/code)
+# Add multiple accounts for pooled rate limits
+accounts:
+  - credentials: "~/.claude/.credentials.json"
+  # - name: "Account 2"
+  #   credentials: "~/.claude2/.credentials.json"
 
 # Port to expose Ollama-compatible API (default: 11434)
 ollama_port: 11434
 
 # Restrict access to subnet (comment out to allow all)
 # ollama_allowed_network: "10.0.0.0/24"
+
+# Failover strategy: "priority" (first available) or "round_robin"
+strategy: "priority"
+
+# Cooldown seconds after a rate-limit error
+cooldown_seconds: 30
 
 # Default model
 default_model: "claude-sonnet-4-6"

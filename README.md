@@ -1,8 +1,8 @@
 # ollama-facade
 
-Run **Claude Max as a local Ollama server** on your network. Any Ollama-compatible client — Cursor, Open WebUI, Claude Code, LangChain — can talk to Claude sonnet/opus/haiku through a single endpoint, routed through your existing Claude Max subscription.
+Run **Claude Max as a local Ollama server** on your network. Any Ollama-compatible client — Cursor, Open WebUI, Claude Code, LangChain — can talk to Claude sonnet/opus/haiku through a single endpoint, using your existing Claude Max subscription.
 
-No API keys. No per-token billing. Just your subscription, available everywhere on your network.
+No API keys. No per-token billing. No external proxy. Just your subscription, available everywhere on your network.
 
 ---
 
@@ -19,7 +19,7 @@ brew install ollama-facade
 # Create default config
 ollama-facade config --init
 
-# Edit config — point at your claude-oauth-proxy backend
+# Edit config — verify your credentials path
 nano ~/.ollama-facade/config.yaml
 
 # Start (foreground)
@@ -49,20 +49,21 @@ brew services stop ollama-facade
 Config lives at `~/.ollama-facade/config.yaml`:
 
 ```yaml
-# Backend — point at cliproxyapi or any OpenAI-compatible endpoint
-primary_url: "http://127.0.0.1:8317/v1"
-secondary_url: null   # optional failover
-
-# API key required by the backend.
-# For cliproxyapi: copy any key from the api-keys list in /opt/homebrew/etc/cliproxyapi.conf
-# Can also be set via CLAUDE_OAUTH_TOKEN env var instead.
-api_key: "sk-ant-..."
+# Claude accounts — point at ~/.claude/.credentials.json (written by Claude CLI)
+# Add multiple accounts for pooled rate limits
+accounts:
+  - credentials: "~/.claude/.credentials.json"
+  # - name: "Account 2"
+  #   credentials: "~/.claude2/.credentials.json"
 
 # Port for the Ollama-compatible API
 ollama_port: 11434
 
 # Restrict to your local subnet (recommended)
-ollama_allowed_network: "10.0.0.0/24"
+# ollama_allowed_network: "10.0.0.0/24"
+
+# Failover strategy: "priority" or "round_robin"
+strategy: "priority"
 
 # Models to expose
 ollama_models:
@@ -76,6 +77,8 @@ ollama_models:
     context_window: 200000
     max_tokens: 8192
 ```
+
+The credentials file at `~/.claude/.credentials.json` is created automatically when you authenticate with the Claude CLI (`claude` command). ollama-facade reads the OAuth token from it directly — no separate proxy needed.
 
 ---
 
@@ -96,7 +99,7 @@ ollama_models:
 
 ### curl tests
 
-Health check (no backend required):
+Health check (no credentials required):
 ```bash
 curl http://localhost:11434/
 # → "Ollama is running"
@@ -108,7 +111,7 @@ curl http://localhost:11434/api/tags
 # → {"models":[{"name":"claude-sonnet-4-6",...},{"name":"claude-opus-4-6",...}]}
 ```
 
-Chat (requires `claude-oauth-proxy` running on `primary_url`):
+Chat:
 ```bash
 # Non-streaming
 curl -s http://localhost:11434/api/chat \
@@ -132,10 +135,11 @@ curl -s http://localhost:11434/api/chat \
 
 | Error | Cause | Fix |
 |---|---|---|
-| `"No proxy URLs configured"` | Config file not found or `primary_url` missing | Run `ollama-facade config --init`, then set `primary_url` in `~/.ollama-facade/config.yaml` |
-| `"Connection error."` | Backend not reachable at `primary_url` | Start `claude-oauth-proxy` or check the URL in your config |
-| `"Invalid API key"` / 401 | `api_key` in config wrong or missing | Copy a key from `cliproxyapi.conf api-keys` into `~/.ollama-facade/config.yaml` |
-| `"All proxies exhausted"` | All backends failed | Check backend logs; token may be rate-limited or expired |
+| `"no token available"` | Credentials file not found | Run `claude` CLI once to authenticate; check path in `~/.ollama-facade/config.yaml` |
+| `"Config not found"` | Config file missing | Run `ollama-facade config --init` |
+| `"Anthropic API error 401"` | OAuth token expired | Token should auto-refresh; try restarting the service |
+| `"Anthropic API error 429"` | Rate limited | Wait for cooldown (configurable via `cooldown_seconds`) |
+| `"All accounts exhausted"` | All accounts rate-limited | Add more accounts to the `accounts:` list in config |
 
 ---
 
@@ -146,9 +150,7 @@ Your clients (Cursor, OpenClaw, Open WebUI)
          │  Ollama protocol
          ▼
   ollama-facade :11434
-         │  OpenAI /v1/messages
-         ▼
-  claude-oauth-proxy :8319
+         │  Anthropic /v1/messages
          │  Chrome TLS + OAuth token
          ▼
   api.anthropic.com
@@ -157,35 +159,7 @@ Your clients (Cursor, OpenClaw, Open WebUI)
   Claude sonnet / opus / haiku
 ```
 
-`ollama-facade` speaks the Ollama protocol. Behind it, [`claude-oauth-proxy`](https://github.com/travis-burmaster/claude-oauth-proxy) handles authentication using your Claude Max OAuth token with Chrome TLS fingerprinting — the same mechanism that makes the official Claude Code client work.
-
----
-
-## Backend: cliproxyapi
-
-ollama-facade is the Ollama-protocol frontend. It needs an OpenAI-compatible backend to forward requests to Claude. The recommended backend is **cliproxyapi**:
-
-```bash
-brew install cliproxyapi
-cliproxyapi --claude-login   # authenticate with your Claude account
-brew services start cliproxyapi
-```
-
-cliproxyapi runs on port 8317 by default. Once it's running, copy one of its API keys into your ollama-facade config:
-
-```bash
-# Find your api-keys in cliproxyapi's config
-grep -A2 "api-keys:" /opt/homebrew/etc/cliproxyapi.conf
-
-# Add it to ollama-facade config
-nano ~/.ollama-facade/config.yaml
-# set: api_key: "sk-ant-..."
-
-# Restart to pick up the change
-brew services restart ollama-facade
-```
-
-Or point `primary_url` at any other OpenAI-compatible endpoint and set its key in `api_key`.
+ollama-facade speaks the Ollama protocol and calls the Anthropic API directly using your Claude Max OAuth token with Chrome TLS fingerprinting — the same mechanism that makes the official Claude Code client work. No intermediate proxy required.
 
 ---
 
@@ -210,6 +184,7 @@ ollama-facade start
 ## Linux (systemd)
 
 ```bash
+pip install curl-cffi pyyaml fastapi uvicorn
 pip install ollama-facade
 
 # Create service
@@ -235,7 +210,8 @@ systemctl --user enable --now ollama-facade
 ## Requirements
 
 - Python 3.10+
-- A running [claude-oauth-proxy](https://github.com/travis-burmaster/claude-oauth-proxy) or any OpenAI-compatible backend
+- A Claude Max subscription (authenticated via the Claude CLI)
+- `curl-cffi` (installed automatically via Homebrew or pip)
 
 ---
 
