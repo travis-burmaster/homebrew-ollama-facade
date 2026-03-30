@@ -195,60 +195,64 @@ async def _ollama_chat_stream(
     now = datetime.now(timezone.utc).isoformat()
     tool_calls_buffer: dict[int, dict] = {}  # index → {id, name, arguments}
 
-    async for chunk in proxy_core._call_with_failover_streaming(messages, model, max_tokens, tools=tools):
-        if chunk.get("error"):
-            line = json.dumps({
-                "model": model,
-                "created_at": now,
-                "message": {"role": "assistant", "content": ""},
-                "done": True,
-                "done_reason": "error",
-                "error": chunk["error"],
-            })
-            yield (line + "\n").encode()
-            return
+    try:
+        async for chunk in proxy_core._call_with_failover_streaming(messages, model, max_tokens, tools=tools):
+            if chunk.get("error"):
+                line = json.dumps({
+                    "model": model,
+                    "created_at": now,
+                    "message": {"role": "assistant", "content": ""},
+                    "done": True,
+                    "done_reason": "error",
+                    "error": chunk["error"],
+                })
+                yield (line + "\n").encode()
+                return
 
-        text = chunk.get("text", "")
-        # Skip empty keepalive chunks — don't emit blank tokens to the client
-        if text:
-            line = json.dumps({
-                "model": model,
-                "created_at": now,
-                "message": {"role": "assistant", "content": text},
-                "done": False,
-            })
-            yield (line + "\n").encode()
+            text = chunk.get("text", "")
+            # Skip empty keepalive chunks — don't emit blank tokens to the client
+            if text:
+                line = json.dumps({
+                    "model": model,
+                    "created_at": now,
+                    "message": {"role": "assistant", "content": text},
+                    "done": False,
+                })
+                yield (line + "\n").encode()
 
-        # Accumulate tool call argument deltas
-        for tc in chunk.get("tool_call_deltas") or []:
-            idx = tc.get("index", 0)
-            if idx not in tool_calls_buffer:
-                tool_calls_buffer[idx] = {"id": tc.get("id") or "", "name": "", "arguments": ""}
-            if tc.get("id"):
-                tool_calls_buffer[idx]["id"] = tc["id"]
-            fn = tc.get("function") or {}
-            if fn.get("name"):
-                tool_calls_buffer[idx]["name"] = fn["name"]
-            if fn.get("arguments"):
-                tool_calls_buffer[idx]["arguments"] += fn["arguments"]
+            # Accumulate tool call argument deltas
+            for tc in chunk.get("tool_call_deltas") or []:
+                idx = tc.get("index", 0)
+                if idx not in tool_calls_buffer:
+                    tool_calls_buffer[idx] = {"id": tc.get("id") or "", "name": "", "arguments": ""}
+                if tc.get("id"):
+                    tool_calls_buffer[idx]["id"] = tc["id"]
+                fn = tc.get("function") or {}
+                if fn.get("name"):
+                    tool_calls_buffer[idx]["name"] = fn["name"]
+                if fn.get("arguments"):
+                    tool_calls_buffer[idx]["arguments"] += fn["arguments"]
 
-        # When stream ends with tool_calls, emit assembled tool calls as Ollama format
-        if chunk.get("finish_reason") == "tool_calls" and tool_calls_buffer:
-            assembled = []
-            for idx in sorted(tool_calls_buffer.keys()):
-                tc = tool_calls_buffer[idx]
-                try:
-                    args_dict = json.loads(tc["arguments"]) if tc["arguments"] else {}
-                except Exception:
-                    args_dict = {"_raw": tc["arguments"]}
-                assembled.append({"function": {"name": tc["name"], "arguments": args_dict}})
-            line = json.dumps({
-                "model": model,
-                "created_at": now,
-                "message": {"role": "assistant", "content": "", "tool_calls": assembled},
-                "done": False,
-            })
-            yield (line + "\n").encode()
+            # When stream ends with tool_calls, emit assembled tool calls as Ollama format
+            if chunk.get("finish_reason") == "tool_calls" and tool_calls_buffer:
+                assembled = []
+                for idx in sorted(tool_calls_buffer.keys()):
+                    tc = tool_calls_buffer[idx]
+                    try:
+                        args_dict = json.loads(tc["arguments"]) if tc["arguments"] else {}
+                    except Exception:
+                        args_dict = {"_raw": tc["arguments"]}
+                    assembled.append({"function": {"name": tc["name"], "arguments": args_dict}})
+                line = json.dumps({
+                    "model": model,
+                    "created_at": now,
+                    "message": {"role": "assistant", "content": "", "tool_calls": assembled},
+                    "done": False,
+                })
+                yield (line + "\n").encode()
+    except Exception as e:
+        yield (json.dumps({"error": str(e), "done": True, "done_reason": "error"}) + "\n").encode()
+        return
 
     total_ns = int((time.time() - t0) * 1_000_000_000)
     done_line = json.dumps({
@@ -292,21 +296,24 @@ async def chat(request: Request):
     if not stream:
         full_text = ""
         tool_calls_buffer: dict[int, dict] = {}
-        async for chunk in proxy_core._call_with_failover_streaming(messages, model, max_tokens, tools=tools):
-            if chunk.get("error"):
-                return JSONResponse({"error": chunk["error"]}, status_code=500)
-            full_text += chunk.get("text", "")
-            for tc in chunk.get("tool_call_deltas") or []:
-                idx = tc.get("index", 0)
-                if idx not in tool_calls_buffer:
-                    tool_calls_buffer[idx] = {"id": tc.get("id") or "", "name": "", "arguments": ""}
-                if tc.get("id"):
-                    tool_calls_buffer[idx]["id"] = tc["id"]
-                fn = tc.get("function") or {}
-                if fn.get("name"):
-                    tool_calls_buffer[idx]["name"] = fn["name"]
-                if fn.get("arguments"):
-                    tool_calls_buffer[idx]["arguments"] += fn["arguments"]
+        try:
+            async for chunk in proxy_core._call_with_failover_streaming(messages, model, max_tokens, tools=tools):
+                if chunk.get("error"):
+                    return JSONResponse({"error": chunk["error"]}, status_code=500)
+                full_text += chunk.get("text", "")
+                for tc in chunk.get("tool_call_deltas") or []:
+                    idx = tc.get("index", 0)
+                    if idx not in tool_calls_buffer:
+                        tool_calls_buffer[idx] = {"id": tc.get("id") or "", "name": "", "arguments": ""}
+                    if tc.get("id"):
+                        tool_calls_buffer[idx]["id"] = tc["id"]
+                    fn = tc.get("function") or {}
+                    if fn.get("name"):
+                        tool_calls_buffer[idx]["name"] = fn["name"]
+                    if fn.get("arguments"):
+                        tool_calls_buffer[idx]["arguments"] += fn["arguments"]
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=502)
         now = datetime.now(timezone.utc).isoformat()
         message: dict = {"role": "assistant", "content": full_text or ""}
         if tool_calls_buffer:
