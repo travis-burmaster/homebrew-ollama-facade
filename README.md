@@ -17,7 +17,7 @@ brew install ollama-facade
 
 ```bash
 # 1. Authenticate with Claude (creates ~/.claude/.credentials.json)
-claude login
+claude setup-token
 
 # 2. Create default config
 ollama-facade config --init
@@ -40,23 +40,23 @@ brew services restart ollama-facade
 
 ## Authentication
 
-ollama-facade reads your Claude Max OAuth token from `~/.claude/.credentials.json`. This file is created automatically when you run:
+ollama-facade reads your Claude Max OAuth token from `~/.claude/.credentials.json`. Run the following to create it:
 
 ```bash
-claude login
+claude setup-token
 ```
 
-This opens a browser where you log into claude.ai with your Claude Max subscription. The token is stored locally and auto-refreshes — you only need to do this once.
+This stores your token locally and auto-refreshes it — you only need to do this once.
 
 **If you don't have the Claude CLI installed:**
 ```bash
 brew install claude   # or: npm install -g @anthropic-ai/claude-code
-claude login
+claude setup-token
 ```
 
 **Alternative — use a raw token directly in config:**
 
-If you already have an OAuth token (e.g. from `~/.claude/.credentials.json` on another machine), you can paste it directly into the config instead of using the credentials file:
+If you already have an OAuth token, you can paste it directly into `~/.ollama-facade/config.yaml` instead of using the credentials file:
 
 ```yaml
 accounts:
