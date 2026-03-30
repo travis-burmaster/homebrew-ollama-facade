@@ -16,23 +16,18 @@ brew install ollama-facade
 ## Quick Start
 
 ```bash
-# Create default config
+# 1. Authenticate with Claude (creates ~/.claude/.credentials.json)
+claude login
+
+# 2. Create default config
 ollama-facade config --init
 
-# Edit config — verify your credentials path
-nano ~/.ollama-facade/config.yaml
+# 3. Start as a background service
+brew services start ollama-facade
 
-# Start (foreground)
-ollama-facade start
-
-# Or start as a background daemon
-ollama-facade start --daemon
-
-# Check status
-ollama-facade status
-
-# Stop daemon
-ollama-facade stop
+# Test it
+curl http://localhost:11434/
+# → "Ollama is running"
 ```
 
 ## Homebrew Service (macOS launchd)
@@ -40,6 +35,46 @@ ollama-facade stop
 ```bash
 brew services start ollama-facade
 brew services stop ollama-facade
+brew services restart ollama-facade
+```
+
+## Authentication
+
+ollama-facade reads your Claude Max OAuth token from `~/.claude/.credentials.json`. This file is created automatically when you run:
+
+```bash
+claude login
+```
+
+This opens a browser where you log into claude.ai with your Claude Max subscription. The token is stored locally and auto-refreshes — you only need to do this once.
+
+**If you don't have the Claude CLI installed:**
+```bash
+brew install claude   # or: npm install -g @anthropic-ai/claude-code
+claude login
+```
+
+**Alternative — use a raw token directly in config:**
+
+If you already have an OAuth token (e.g. from `~/.claude/.credentials.json` on another machine), you can paste it directly into the config instead of using the credentials file:
+
+```yaml
+accounts:
+  - name: "My Account"
+    token: "sk-ant-oat01-..."
+```
+
+**Multi-account setup** (multiply your rate limits):
+```yaml
+accounts:
+  - credentials: "~/.claude/.credentials.json"
+  - name: "Second Account"
+    credentials: "~/.claude2/.credentials.json"
+```
+
+After updating the config, restart the service:
+```bash
+brew services restart ollama-facade
 ```
 
 ---
