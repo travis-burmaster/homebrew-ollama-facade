@@ -9,8 +9,6 @@ class OllamaFacade < Formula
 
   depends_on "python@3.12"
 
-  # ── Core deps (pure Python wheels) ─────────────────────────────────────────
-
   resource "certifi" do
     url "https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl"
     sha256 "ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"
@@ -66,17 +64,10 @@ class OllamaFacade < Formula
     sha256 "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"
   end
 
-  # ── Platform-specific native wheels ────────────────────────────────────────
-
   on_arm do
     resource "pydantic-core" do
       url "https://files.pythonhosted.org/packages/19/78/f381d643b12378fee782a72126ec5d793081ef03791c28a0fd542a5bee64/pydantic_core-2.33.1-cp312-cp312-macosx_11_0_arm64.whl"
       sha256 "99b56acd433386c8f20be5c4000786d1e7ca0523c8eefc995d14d79c7a081498"
-    end
-
-    resource "curl-cffi" do
-      url "https://files.pythonhosted.org/packages/29/e9/141ff25c5e35f4afc998cf60134df94e0a9157427da69d6ee1d2a045c554/curl_cffi-0.7.4-cp38-abi3-macosx_11_0_arm64.whl"
-      sha256 "fb76b654fcf9f3e0400cf13be949e4fc525aeb0f9e2e90e61ae48d5bd8557d25"
     end
   end
 
@@ -84,11 +75,6 @@ class OllamaFacade < Formula
     resource "pydantic-core" do
       url "https://files.pythonhosted.org/packages/c8/ce/3cb22b07c29938f97ff5f5bb27521f95e2ebec399b882392deb68d6c440e/pydantic_core-2.33.1-cp312-cp312-macosx_10_12_x86_64.whl"
       sha256 "1293d7febb995e9d3ec3ea09caf1a26214eec45b0f29f6074abb004723fc1de8"
-    end
-
-    resource "curl-cffi" do
-      url "https://files.pythonhosted.org/packages/d1/c7/f2133c98a9956baa720dc775ba43b2cf7bf22b0feb0f921aab9bbeb2b58c/curl_cffi-0.7.4-cp38-abi3-macosx_10_9_x86_64.whl"
-      sha256 "417f5264fa746d2680ebb20fbfbcfe5d77fa11a735548d9db6734e839a238e22"
     end
   end
 
@@ -109,6 +95,11 @@ class OllamaFacade < Formula
 
   def install
     virtualenv_install_with_resources
+
+    # Install curl-cffi separately using pip (pre-built wheel, avoids build issues)
+    venv_pip = libexec/"bin/pip"
+    system venv_pip, "install", "--no-deps", "--quiet",
+           "curl-cffi==0.7.4"
   end
 
   service do
