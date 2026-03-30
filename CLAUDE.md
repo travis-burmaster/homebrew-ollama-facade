@@ -61,18 +61,17 @@ No test suite exists. The Homebrew formula test (`brew test ollama-facade`) just
 
 **`ollama_facade/cli.py`** — Argument parsing and daemon lifecycle (start/stop/status/config commands). Manages PID file at `~/.ollama-facade/ollama-facade.pid`.
 
-### Token Auto-Detection (in `Account.get_token()`)
+### Token Resolution (in `Account.get_token()`)
 
 Checked in order:
 1. `~/.openclaw/agents/main/agent/auth-profiles.json` (OpenClaw)
 2. Explicit `token:` in config
 3. Explicit `credentials:` path in config
 4. `~/.claude/.credentials.json` (written by `claude setup-token`)
-5. `~/.cli-proxy-api/*.json` (written by cliproxyapi / Claude CLI) ← most common on macOS
 
-Two credentials file formats are supported:
-- **cliproxyapi format**: `{"access_token": "...", "refresh_token": "...", "expired": "ISO8601"}`
-- **claude format**: `{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": ms}}`
+Credentials file format: `{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": ms}}`
+
+Token auto-refreshes via the Anthropic OAuth endpoint when within 5 minutes of expiry.
 
 ### Configuration
 

@@ -16,13 +16,16 @@ brew install ollama-facade
 ## Quick Start
 
 ```bash
-# 1. Create default config
+# 1. Authenticate with Claude (creates ~/.claude/.credentials.json)
+claude setup-token
+
+# 2. Create default config
 ollama-facade config --init
 
-# 2. Start as a background service
+# 3. Start as a background service
 brew services start ollama-facade
 
-# 3. Test it
+# 4. Test it
 curl http://localhost:11434/
 # → "Ollama is running"
 
@@ -30,8 +33,6 @@ curl -s http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"say hi"}],"stream":false}'
 ```
-
-Token is auto-detected — see [Authentication](#authentication) below.
 
 ## Homebrew Service (macOS launchd)
 
@@ -45,35 +46,38 @@ brew services restart ollama-facade
 
 ## Authentication
 
-ollama-facade auto-detects your Claude OAuth token from these locations, in order:
+ollama-facade reads your Claude Max OAuth token from `~/.claude/.credentials.json`. Run the following once to create it:
 
-1. **`~/.cli-proxy-api/<email>.json`** — written by [cliproxyapi](https://github.com/travis-burmaster/cliproxyapi) or the Claude CLI. **If you use Claude Code, this file already exists.**
-2. **`~/.claude/.credentials.json`** — written by `claude setup-token`
-3. **Explicit path or token** in `~/.ollama-facade/config.yaml`
+```bash
+claude setup-token
+```
 
-No extra setup needed if you already have Claude Code or cliproxyapi installed. Tokens auto-refresh when they expire.
+This opens a browser where you log into claude.ai with your Claude Max subscription. The token is stored locally and auto-refreshes — you only need to do this once.
 
-**If you need to create a token from scratch:**
+**If you don't have the Claude CLI installed:**
 ```bash
 brew install claude   # or: npm install -g @anthropic-ai/claude-code
 claude setup-token
 ```
 
-**Explicit config** (if auto-detection doesn't find your token):
+**Explicit credentials path** (if your file is in a non-default location):
 ```yaml
 accounts:
-  - credentials: "~/.cli-proxy-api/you@example.com.json"
-  # or:
-  # - credentials: "~/.claude/.credentials.json"
-  # or raw token (expires, no auto-refresh):
-  # - token: "sk-ant-oat01-..."
+  - credentials: "/path/to/.credentials.json"
+```
+
+**Raw token** (expires, no auto-refresh — not recommended):
+```yaml
+accounts:
+  - token: "sk-ant-oat01-..."
 ```
 
 **Multi-account setup** (multiply your rate limits):
 ```yaml
 accounts:
-  - credentials: "~/.cli-proxy-api/account1@example.com.json"
-  - credentials: "~/.cli-proxy-api/account2@example.com.json"
+  - credentials: "~/.claude/.credentials.json"
+  - name: "Account 2"
+    credentials: "~/.claude2/.credentials.json"
 ```
 
 After updating the config, restart the service:
@@ -88,9 +92,11 @@ brew services restart ollama-facade
 Config lives at `~/.ollama-facade/config.yaml`:
 
 ```yaml
-# Claude accounts — auto-detected if not specified
+# Claude accounts — credentials file written by 'claude setup-token'
 accounts:
-  - credentials: "~/.cli-proxy-api/you@example.com.json"
+  - credentials: "~/.claude/.credentials.json"
+  # - name: "Account 2"
+  #   credentials: "~/.claude2/.credentials.json"
 
 # Port for the Ollama-compatible API
 ollama_port: 11434
@@ -172,9 +178,9 @@ curl -s http://localhost:11434/api/chat \
 
 | Error | Cause | Fix |
 |---|---|---|
-| `"no token available"` | No credentials found | Check `~/.cli-proxy-api/` or run `claude setup-token` |
+| `"no token available"` | `~/.claude/.credentials.json` not found | Run `claude setup-token` |
 | `"Config not found"` | Config file missing | Run `ollama-facade config --init` |
-| `"Anthropic API error 401"` | OAuth token expired and refresh failed | Restart service (triggers refresh); or re-run `claude setup-token` |
+| `"Anthropic API error 401"` | OAuth token expired and refresh failed | Re-run `claude setup-token` |
 | `"Anthropic API error 429"` | Rate limited | Wait for cooldown (configurable via `cooldown_seconds`) |
 | `"All accounts exhausted"` | All accounts rate-limited | Add more accounts to the `accounts:` list in config |
 
@@ -197,11 +203,6 @@ Your clients (Cursor, OpenClaw, Open WebUI)
 ```
 
 ollama-facade speaks the Ollama protocol and calls the Anthropic API directly using your Claude Max OAuth token with Chrome TLS fingerprinting — the same mechanism that makes the official Claude Code client work. No intermediate proxy required.
-
-Token sources checked in order:
-- `~/.cli-proxy-api/<email>.json` (cliproxyapi / Claude CLI)
-- `~/.claude/.credentials.json` (claude setup-token)
-- Explicit `credentials:` or `token:` in config
 
 ---
 
@@ -251,7 +252,7 @@ systemctl --user enable --now ollama-facade
 ## Requirements
 
 - Python 3.10+
-- A Claude Max subscription with an OAuth token in `~/.cli-proxy-api/` or `~/.claude/.credentials.json`
+- A Claude Max subscription authenticated via `claude setup-token`
 - `curl-cffi` (installed automatically via Homebrew or pip)
 
 ---

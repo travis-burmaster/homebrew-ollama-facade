@@ -124,12 +124,10 @@ class OllamaFacade < Formula
         ollama-facade config --init
         brew services start ollama-facade
 
-      Your Claude OAuth token is auto-detected from:
-        ~/.cli-proxy-api/<email>.json   (Claude CLI / cliproxyapi)
-        ~/.claude/.credentials.json     (claude setup-token)
-
-      If neither exists, run in a terminal:
+      Authenticate with Claude (run once in a terminal):
         claude setup-token
+
+      This creates ~/.claude/.credentials.json with your OAuth token.
 
       Connect any Ollama-compatible client to:
         http://localhost:11434
