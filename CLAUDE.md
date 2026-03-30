@@ -64,14 +64,11 @@ No test suite exists. The Homebrew formula test (`brew test ollama-facade`) just
 ### Token Resolution (in `Account.get_token()`)
 
 Checked in order:
-1. `~/.openclaw/agents/main/agent/auth-profiles.json` (OpenClaw)
-2. Explicit `token:` in config
-3. Explicit `credentials:` path in config
-4. `~/.claude/.credentials.json` (written by `claude setup-token`)
+1. Explicit `token:` in config
+2. Explicit `credentials:` path in config (file format: `{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": ms}}`)
+3. `~/.claude/.credentials.json` as fallback
 
-Credentials file format: `{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": ms}}`
-
-Token auto-refreshes via the Anthropic OAuth endpoint when within 5 minutes of expiry.
+The primary intended usage is a raw `token:` in config. Token is obtained via `claude setup-token`.
 
 ### Configuration
 

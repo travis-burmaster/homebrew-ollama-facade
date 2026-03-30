@@ -16,19 +16,16 @@ brew install ollama-facade
 ## Quick Start
 
 ```bash
-# 1. Authenticate with Claude (creates ~/.claude/.credentials.json)
-claude setup-token
-
-# 2. Create default config
+# 1. Create default config
 ollama-facade config --init
+
+# 2. Add your OAuth token
+nano ~/.ollama-facade/config.yaml
 
 # 3. Start as a background service
 brew services start ollama-facade
 
 # 4. Test it
-curl http://localhost:11434/
-# → "Ollama is running"
-
 curl -s http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"say hi"}],"stream":false}'
@@ -46,43 +43,26 @@ brew services restart ollama-facade
 
 ## Authentication
 
-ollama-facade reads your Claude Max OAuth token from `~/.claude/.credentials.json`. Run the following once to create it:
+Add your Claude Max OAuth token to `~/.ollama-facade/config.yaml`:
 
-```bash
-claude setup-token
-```
-
-This opens a browser where you log into claude.ai with your Claude Max subscription. The token is stored locally and auto-refreshes — you only need to do this once.
-
-**If you don't have the Claude CLI installed:**
-```bash
-brew install claude   # or: npm install -g @anthropic-ai/claude-code
-claude setup-token
-```
-
-**Explicit credentials path** (if your file is in a non-default location):
-```yaml
-accounts:
-  - credentials: "/path/to/.credentials.json"
-```
-
-**Raw token** (expires, no auto-refresh — not recommended):
 ```yaml
 accounts:
   - token: "sk-ant-oat01-..."
 ```
 
+To get your token, run `claude setup-token` in a terminal. Then restart the service after updating the config:
+
+```bash
+brew services restart ollama-facade
+```
+
 **Multi-account setup** (multiply your rate limits):
 ```yaml
 accounts:
-  - credentials: "~/.claude/.credentials.json"
+  - name: "Account 1"
+    token: "sk-ant-oat01-..."
   - name: "Account 2"
-    credentials: "~/.claude2/.credentials.json"
-```
-
-After updating the config, restart the service:
-```bash
-brew services restart ollama-facade
+    token: "sk-ant-oat01-..."
 ```
 
 ---
@@ -92,11 +72,8 @@ brew services restart ollama-facade
 Config lives at `~/.ollama-facade/config.yaml`:
 
 ```yaml
-# Claude accounts — credentials file written by 'claude setup-token'
 accounts:
-  - credentials: "~/.claude/.credentials.json"
-  # - name: "Account 2"
-  #   credentials: "~/.claude2/.credentials.json"
+  - token: "sk-ant-oat01-..."
 
 # Port for the Ollama-compatible API
 ollama_port: 11434
@@ -142,7 +119,7 @@ ollama_models:
 
 ### curl tests
 
-Health check (no credentials required):
+Health check:
 ```bash
 curl http://localhost:11434/
 # → "Ollama is running"
@@ -178,9 +155,9 @@ curl -s http://localhost:11434/api/chat \
 
 | Error | Cause | Fix |
 |---|---|---|
-| `"no token available"` | `~/.claude/.credentials.json` not found | Run `claude setup-token` |
+| `"no token available"` | No token in config | Add `token:` to `~/.ollama-facade/config.yaml` |
 | `"Config not found"` | Config file missing | Run `ollama-facade config --init` |
-| `"Anthropic API error 401"` | OAuth token expired and refresh failed | Re-run `claude setup-token` |
+| `"Anthropic API error 401"` | Token invalid or expired | Get a fresh token via `claude setup-token` |
 | `"Anthropic API error 429"` | Rate limited | Wait for cooldown (configurable via `cooldown_seconds`) |
 | `"All accounts exhausted"` | All accounts rate-limited | Add more accounts to the `accounts:` list in config |
 
@@ -219,6 +196,7 @@ source .venv/bin/activate
 pip install -e .
 
 ollama-facade config --init
+# add token to ~/.ollama-facade/config.yaml
 ollama-facade start
 ```
 
@@ -252,7 +230,7 @@ systemctl --user enable --now ollama-facade
 ## Requirements
 
 - Python 3.10+
-- A Claude Max subscription authenticated via `claude setup-token`
+- A Claude Max subscription with an OAuth token (`claude setup-token`)
 - `curl-cffi` (installed automatically via Homebrew or pip)
 
 ---

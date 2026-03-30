@@ -122,12 +122,11 @@ class OllamaFacade < Formula
 
       Quick start:
         ollama-facade config --init
+        # Add your OAuth token to ~/.ollama-facade/config.yaml:
+        #   accounts:
+        #     - token: "sk-ant-oat01-..."
+        # Get your token by running: claude setup-token
         brew services start ollama-facade
-
-      Authenticate with Claude (run once in a terminal):
-        claude setup-token
-
-      This creates ~/.claude/.credentials.json with your OAuth token.
 
       Connect any Ollama-compatible client to:
         http://localhost:11434

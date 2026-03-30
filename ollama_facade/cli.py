@@ -28,12 +28,12 @@ LOG_FILE    = CONFIG_DIR / "ollama-facade.log"
 DEFAULT_CONFIG = """\
 # ollama-facade config
 
-# Claude accounts — credentials files written by the Claude CLI (claude.ai/code)
+# Claude accounts — add your OAuth token from 'claude setup-token'
 # Add multiple accounts for pooled rate limits
 accounts:
-  - credentials: "~/.claude/.credentials.json"
+  - token: ""
   # - name: "Account 2"
-  #   credentials: "~/.claude2/.credentials.json"
+  #   token: ""
 
 # Port to expose Ollama-compatible API (default: 11434)
 ollama_port: 11434
