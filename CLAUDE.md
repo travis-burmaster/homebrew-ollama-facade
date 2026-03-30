@@ -65,10 +65,14 @@ No test suite exists. The Homebrew formula test (`brew test ollama-facade`) just
 
 Checked in order:
 1. Explicit `token:` in config
-2. Explicit `credentials:` path in config (file format: `{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": ms}}`)
+2. Explicit `credentials:` path in config (auto-detects format):
+   - cli-proxy-api format: `{"access_token": "...", "refresh_token": "...", "expired": "ISO8601"}`
+   - claude setup-token format: `{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": ms}}`
 3. `~/.claude/.credentials.json` as fallback
 
 The primary intended usage is a raw `token:` in config. Token is obtained via `claude setup-token`.
+
+On 401 errors, `call_anthropic` automatically calls `force_refresh()` to get a new token before retrying.
 
 ### Configuration
 
@@ -85,7 +89,7 @@ Key fields:
 ### Anthropic API Details
 
 - URL: `https://api.anthropic.com/v1/messages?beta=true`
-- Auth header: `x-api-key: <oauth_token>` (not Bearer)
+- Auth header: `Authorization: Bearer <oauth_token>`
 - Required beta: `claude-code-20250219,oauth-2025-04-20,...`
 - Required header: `Anthropic-Dangerous-Direct-Browser-Access: true`
 - Billing cloaking injected into system prompt (required for sonnet/opus)
