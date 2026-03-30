@@ -120,20 +120,16 @@ class OllamaFacade < Formula
     <<~EOS
       ollama-facade exposes Claude Max as a local Ollama server on port 11434.
 
-      Before starting, create your config:
+      Quick start:
         ollama-facade config --init
-
-      Edit ~/.ollama-facade/config.yaml and verify the credentials path:
-        accounts:
-          - credentials: "~/.claude/.credentials.json"
-
-      (This file is created automatically when you log in with the Claude CLI.)
-
-      Start in the foreground:
-        ollama-facade start
-
-      Start as a background service (launchd):
         brew services start ollama-facade
+
+      Your Claude OAuth token is auto-detected from:
+        ~/.cli-proxy-api/<email>.json   (Claude CLI / cliproxyapi)
+        ~/.claude/.credentials.json     (claude setup-token)
+
+      If neither exists, run in a terminal:
+        claude setup-token
 
       Connect any Ollama-compatible client to:
         http://localhost:11434
