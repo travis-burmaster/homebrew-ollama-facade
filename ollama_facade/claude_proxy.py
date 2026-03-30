@@ -17,8 +17,9 @@ from typing import Any, AsyncGenerator
 try:
     from curl_cffi import requests as cffi_requests
     CFFI_AVAILABLE = True
-except ImportError:
+except ImportError as _curl_cffi_import_error:
     CFFI_AVAILABLE = False
+    _curl_cffi_import_error_msg = str(_curl_cffi_import_error)
 
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -368,7 +369,12 @@ def openai_messages_to_anthropic_body(
 def call_anthropic(pool: AccountPool, body: dict, stream: bool, max_retries: int = 3):
     """Call Anthropic API with multi-account failover. Returns response object."""
     if not CFFI_AVAILABLE:
-        raise RuntimeError("curl-cffi required: pip install curl-cffi")
+        import sys
+        raise RuntimeError(
+            f"curl-cffi not importable in this Python environment ({sys.executable}). "
+            f"Import error: {_curl_cffi_import_error_msg}. "
+            f"Fix: {sys.executable} -m pip install curl-cffi"
+        )
 
     body = _inject_cloaking(body)
     payload = json.dumps(body).encode()
