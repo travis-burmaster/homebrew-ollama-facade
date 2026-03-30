@@ -11,12 +11,12 @@ class OllamaFacade < Formula
 
   resource "fastapi" do
     url "https://files.pythonhosted.org/packages/source/f/fastapi/fastapi-0.115.12.tar.gz"
-    sha256 "1e2c2a2646905f9e83d32f04a3f86aff8a5a542a0a37f8827b4a6a64157a97e8"
+    sha256 "1e2c2a2646905f9e83d32f04a3f86aff4a286669c6c950ca95b5fd68c2602681"
   end
 
   resource "uvicorn" do
     url "https://files.pythonhosted.org/packages/source/u/uvicorn/uvicorn-0.34.0.tar.gz"
-    sha256 "404ca8f0a4e7b09e2eeaaf5cd5df3f1720abe6762b4e02fe01d88825b0ceea50"
+    sha256 "404051050cd7e905de2c9a7e61790943440b3416f49cb409f965d9dcd0fa73e9"
   end
 
   resource "httpx" do
@@ -25,13 +25,13 @@ class OllamaFacade < Formula
   end
 
   resource "pyyaml" do
-    url "https://files.pythonhosted.org/packages/source/P/PyYAML/PyYAML-6.0.2.tar.gz"
+    url "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz"
     sha256 "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"
   end
 
   resource "curl-cffi" do
     url "https://files.pythonhosted.org/packages/source/c/curl_cffi/curl_cffi-0.7.4.tar.gz"
-    sha256 "PLACEHOLDER_CURL_CFFI_SHA256"
+    sha256 "37a2c8ec77b9914b0c14c74f604991751948d9d5def58fcddcbe73e3b62111c1"
   end
 
   def install
@@ -68,7 +68,7 @@ class OllamaFacade < Formula
       Connect any Ollama-compatible client to:
         http://localhost:11434
 
-      Full docs: https://github.com/travis-burmaster/ollama-facade
+      Full docs: https://github.com/travis-burmaster/homebrew-ollama-facade
     EOS
   end
 
