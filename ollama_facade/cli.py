@@ -27,9 +27,13 @@ LOG_FILE    = CONFIG_DIR / "ollama-facade.log"
 
 DEFAULT_CONFIG = """\
 # ollama-facade config
-# Proxy backend — point this at claude-oauth-proxy or any OpenAI-compatible endpoint
-primary_url: "http://127.0.0.1:8319/v1"
+# Proxy backend — point this at cliproxyapi or any OpenAI-compatible endpoint
+primary_url: "http://127.0.0.1:8317/v1"
 secondary_url: null
+
+# API key required by the backend (e.g. the key from cliproxyapi.conf api-keys list)
+# Can also be set via CLAUDE_OAUTH_TOKEN env var
+api_key: ""
 
 # Port to expose Ollama-compatible API (default: 11434)
 ollama_port: 11434

@@ -135,7 +135,8 @@ class KeySlot:
         api_key = (
             os.environ.get(token_key)
             or os.environ.get("CLAUDE_OAUTH_TOKEN")
-            or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "not-needed")
+            or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+            or CFG.get("api_key", "not-needed")
         )
         self.client = openai.AsyncOpenAI(
             base_url=self.url,
