@@ -39,6 +39,8 @@ DEFAULT_CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 DEFAULT_AUTH_PROFILES_PATH = (
     Path.home() / ".openclaw" / "agents" / "main" / "agent" / "auth-profiles.json"
 )
+# cliproxyapi stores tokens here: ~/.cli-proxy-api/<email>.json
+DEFAULT_CLI_PROXY_API_DIR = Path.home() / ".cli-proxy-api"
 
 MODEL_ALIASES = {
     "sonnet": "claude-sonnet-4-6",
@@ -84,23 +86,37 @@ class Account:
             if self._token:
                 return self._token
 
-            # Try explicit credentials path
+            # Try explicit credentials path (auto-detect format)
             if self._token_path and self._token_path.exists():
                 return self._load_from_credentials(self._token_path)
 
-            # Fall back to default credentials.json
-            if DEFAULT_CREDENTIALS_PATH.exists():
+            # Fall back to ~/.claude/.credentials.json (claude setup-token)
+            if DEFAULT_CREDENTIALS_PATH.exists() and DEFAULT_CREDENTIALS_PATH.stat().st_size > 0:
                 return self._load_from_credentials(DEFAULT_CREDENTIALS_PATH)
 
+            # Fall back to cliproxyapi token store (~/.cli-proxy-api/*.json)
+            if DEFAULT_CLI_PROXY_API_DIR.exists():
+                for p in sorted(DEFAULT_CLI_PROXY_API_DIR.glob("*.json")):
+                    try:
+                        return self._load_from_credentials(p)
+                    except Exception:
+                        continue
+
             raise RuntimeError(f"Account '{self.name}': no token available. "
-                               "Run 'claude' once to authenticate.")
+                               "Run 'claude setup-token' to authenticate.")
 
     def _load_from_credentials(self, path: Path) -> str:
         creds = json.loads(path.read_text())
+
+        # cliproxyapi format: {"access_token": "...", "refresh_token": "...", "expired": "ISO8601"}
+        if "access_token" in creds:
+            return self._load_cliproxy_format(creds, path)
+
+        # claude setup-token format: {"claudeAiOauth": {"accessToken": "...", "expiresAt": ms}}
         oauth = creds.get("claudeAiOauth", {})
         expires_at = oauth.get("expiresAt", 0)
         if expires_at < (time.time() + 300) * 1000:
-            self._try_refresh(oauth, path)
+            self._try_refresh_claude_format(oauth, creds, path)
             creds = json.loads(path.read_text())
             oauth = creds.get("claudeAiOauth", {})
         token = oauth.get("accessToken")
@@ -108,7 +124,63 @@ class Account:
             raise RuntimeError(f"Account '{self.name}': no accessToken in {path}")
         return token
 
-    def _try_refresh(self, oauth: dict, path: Path) -> None:
+    def _load_cliproxy_format(self, creds: dict, path: Path) -> str:
+        """Handle cliproxyapi token format: ~/.cli-proxy-api/<email>.json"""
+        from datetime import datetime, timezone
+        expired_str = creds.get("expired", "")
+        try:
+            expired_dt = datetime.fromisoformat(expired_str)
+            if expired_dt.tzinfo is None:
+                expired_dt = expired_dt.replace(tzinfo=timezone.utc)
+            expires_ts = expired_dt.timestamp()
+        except Exception:
+            expires_ts = 0
+
+        if expires_ts < time.time() + 300:
+            self._try_refresh_cliproxy_format(creds, path)
+            creds = json.loads(path.read_text())
+
+        token = creds.get("access_token")
+        if not token:
+            raise RuntimeError(f"Account '{self.name}': no access_token in {path}")
+        return token
+
+    def _try_refresh_cliproxy_format(self, creds: dict, path: Path) -> None:
+        refresh_tok = creds.get("refresh_token", "")
+        if not refresh_tok:
+            return
+        try:
+            payload = json.dumps({
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_tok,
+                "client_id": OAUTH_CLIENT_ID,
+            }).encode()
+            req = urllib.request.Request(
+                TOKEN_REFRESH_URL, data=payload,
+                headers={"Content-Type": "application/json",
+                         "anthropic-version": ANTHROPIC_VERSION},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read())
+                new_token = data.get("access_token")
+                new_refresh = data.get("refresh_token")
+                expires_in = data.get("expires_in", 3600)
+                if new_token:
+                    from datetime import datetime, timezone, timedelta
+                    creds = json.loads(path.read_text())
+                    creds["access_token"] = new_token
+                    if new_refresh:
+                        creds["refresh_token"] = new_refresh
+                    creds["expired"] = (
+                        datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+                    ).isoformat()
+                    path.write_text(json.dumps(creds, indent=2))
+        except Exception as e:
+            import sys
+            print(f"[claude-proxy] {self.name}: token refresh failed: {e}", file=sys.stderr)
+
+    def _try_refresh_claude_format(self, oauth: dict, creds: dict, path: Path) -> None:
         refresh_tok = oauth.get("refreshToken", "")
         if not refresh_tok:
             return
@@ -130,7 +202,6 @@ class Account:
                 new_refresh = data.get("refresh_token")
                 expires_in = data.get("expires_in", 3600)
                 if new_token:
-                    creds = json.loads(path.read_text())
                     creds["claudeAiOauth"]["accessToken"] = new_token
                     if new_refresh:
                         creds["claudeAiOauth"]["refreshToken"] = new_refresh
