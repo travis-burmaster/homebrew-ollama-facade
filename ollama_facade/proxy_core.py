@@ -20,15 +20,22 @@ logger = logging.getLogger("llm-proxy")
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-CONFIG_PATH = Path(__file__).parent / "config.yaml"
+def _resolve_config_path() -> Path:
+    if env := os.environ.get("OLLAMA_FACADE_CONFIG"):
+        return Path(env)
+    user_cfg = Path.home() / ".ollama-facade" / "config.yaml"
+    if user_cfg.exists():
+        return user_cfg
+    return Path(__file__).parent / "config.yaml"
 
 
 def load_config() -> dict:
-    if not CONFIG_PATH.exists():
+    path = _resolve_config_path()
+    if not path.exists():
         raise FileNotFoundError(
-            f"Config not found at {CONFIG_PATH}. Copy config.example.yaml → config.yaml."
+            f"Config not found at {path}. Run: ollama-facade config --init"
         )
-    with open(CONFIG_PATH) as f:
+    with open(path) as f:
         return yaml.safe_load(f)
 
 

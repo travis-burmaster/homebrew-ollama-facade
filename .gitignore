@@ -6,3 +6,4 @@ build/
 .venv/
 *.log
 config.yaml
+CLAUDE.md

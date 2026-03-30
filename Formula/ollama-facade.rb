@@ -59,6 +59,35 @@ class OllamaFacade < Formula
     sha256 "77c74ed9d2720138b25875133f3a2dae6d854af2ec37dceb56aef370c1d8a227"
   end
 
+  resource "distro" do
+    url "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl"
+    sha256 "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"
+  end
+
+  resource "tqdm" do
+    url "https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl"
+    sha256 "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf"
+  end
+
+  on_arm do
+    resource "jiter" do
+      url "https://files.pythonhosted.org/packages/c3/27/e57f9a783246ed95481e6749cc5002a8a767a73177a83c63ea71f0528b90/jiter-0.13.0-cp312-cp312-macosx_11_0_arm64.whl"
+      sha256 "f917a04240ef31898182f76a332f508f2cc4b57d2b4d7ad2dbfebbfe167eb505"
+    end
+  end
+
+  on_intel do
+    resource "jiter" do
+      url "https://files.pythonhosted.org/packages/2e/30/7687e4f87086829955013ca12a9233523349767f69653ebc27036313def9/jiter-0.13.0-cp312-cp312-macosx_10_12_x86_64.whl"
+      sha256 "0a2bd69fc1d902e89925fc34d1da51b2128019423d7b339a45d9e99c894e0663"
+    end
+  end
+
+  resource "openai" do
+    url "https://files.pythonhosted.org/packages/2a/9e/5bfa2270f902d5b92ab7d41ce0475b8630572e71e349b2a4996d14bdda93/openai-2.30.0-py3-none-any.whl"
+    sha256 "9a5ae616888eb2748ec5e0c5b955a51592e0b201a11f4262db920f2a78c5231d"
+  end
+
   resource "pyyaml" do
     url "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz"
     sha256 "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"
@@ -115,7 +144,7 @@ class OllamaFacade < Formula
       ollama-facade exposes Claude Max as a local Ollama server on port 11434.
 
       Before starting, create your config:
-        ollama-facade config init
+        ollama-facade config --init
 
       Then edit ~/.ollama-facade/config.yaml to point at your claude-oauth-proxy:
         primary_url: "http://127.0.0.1:8319/v1"

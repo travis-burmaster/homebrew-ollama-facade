@@ -7,7 +7,7 @@ Usage:
   ollama-facade stop            # stop daemon
   ollama-facade status          # show running status
   ollama-facade config          # print config path and current settings
-  ollama-facade config init     # create default config.yaml
+  ollama-facade config --init   # create default config.yaml
 """
 
 from __future__ import annotations

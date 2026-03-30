@@ -17,7 +17,7 @@ brew install ollama-facade
 
 ```bash
 # Create default config
-ollama-facade config init
+ollama-facade config --init
 
 # Edit config — point at your claude-oauth-proxy backend
 nano ~/.ollama-facade/config.yaml
@@ -135,6 +135,24 @@ That repo handles:
 - Subnet restriction
 
 Install both for the full stack, or point `primary_url` at any existing OpenAI-compatible endpoint.
+
+---
+
+## Development
+
+The system Python on macOS is too old (3.9). Use a virtualenv with Homebrew Python 3.12+:
+
+```bash
+git clone https://github.com/travis-burmaster/homebrew-ollama-facade
+cd homebrew-ollama-facade
+
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+ollama-facade config --init
+ollama-facade start
+```
 
 ---
 
